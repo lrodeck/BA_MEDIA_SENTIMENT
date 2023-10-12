@@ -1,0 +1,310 @@
+---
+    title: "Quantitative Zeitreihenanalyse der Medienberichterstattung und dem Wandel der Öffentlichen Stimmung zur Flüchtlingskrise 2015/2016"
+    subtitle: "Automatisierte Textanalyse und Medieneinfluss im Fokus"
+    abstract: "Diese Hausarbeit untersucht die Entwicklung des Sentiments in derBerichterstattung über Flüchtlinge in Deutschland während der Flüchtlingskrise 2015/2016. Die Analyse konzentriert sich auf die 'Wir schaffen das!'-Rede von Angela Merkel am 31. August 2015 und die Silvesternacht 2015/2016. Mittels Sentimentanalyse und Themenclustering werden Artikel aus den Online-Zeitungen Bild Online und Spiegel Online verglichen.
+Die Ergebnisse zeigen, dass das Sentiment zu Beginn positiv war und sich im Laufe der Zeit negativ veränderte, wobei beide Zeitungen diese Entwicklung widerspiegelten. Die Studie bietet Einblicke in die Rolle der Medien bei der Wahrnehmung der Flüchtlingskrise. Die Verwendung von Natural Language AI-Modellen ermöglicht eine umfassende Analyse großer Textmengen. Die Ergebnisse tragen zur Reflexion über den Medieneinfluss auf die öffentliche Meinung bei und bieten eine Grundlage für zukünftige Forschung über die Berichterstattung zu gesellschaftlich relevanten Themen."
+    author: 
+      - "Lasse Rodeck, Matrikel Nr.: 6906226"
+      - "Seminartitel: Zur medialen und sozialen Strukturierung Politischen Konflikts und Zusammenhalts"
+      - "Seminar‐Nr.: 24-108.26"
+      - "Modul: Vertiefungsmodul"
+      - "Dozent: Dr. Matthias Revers"
+    date: "`r format(Sys.time(), '%A %d %B, %Y')`"
+    output:      
+      pdf_document:
+        latex_engine: xelatex
+        toc: true
+        toc_depth: 2
+        number_sections: true
+        highlight: tango
+        keep_tex: true
+        fig_width: 8
+        fig_height: 5
+        extra_dependencies: ["float"]
+    bibliography: references.bib
+    lang: de-DE
+    lof: true
+    lot: true
+    language:
+      label:
+          fig: 'Abbildung '
+    fontsize: 11pt
+    linestretch: 1.5
+    toc-title: "Inhaltsverzeichnis"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.pos = "H", out.extra = "")
+```
+
+```{r load-packages, include = FALSE}
+# packages
+library(data.table)
+library(DescTools)
+library(rvest)
+library(sentiment.ai)
+library(SentimentAnalysis)
+library(sentimentr)
+library(tidyverse)
+library(xml2)
+
+data_fin <- readRDS("data/table_spiegel_data.rds")
+data_sent_raw <- readRDS("data/table_data_flucht_full_sentiments_raw.rds")
+data_flucht_sent <- readRDS("data/table_data_flucht_sent_sentiments_raw.rds")
+data_flucht <- readRDS("data/table_data_flucht_sentiments_raw.rds")
+
+
+```
+
+**Eigenständigkeitserklärung**
+
+Rodeck, Lasse 6906226 Hiermit erkläre ich, Lasse Rodeck, dass ich die vorliegende Arbeit eigenständig, ohne fremde Hilfe und nur unter Verwendung der angegebenen Hilfsmittel angefertigt habe. Alle sinngemäß und wörtlich übernommenen Textstellen aus der Literatur bzw. dem Internet habe ich als solche kenntlich gemacht. Mir ist bekannt, dass im Falle einer Täuschung die Abschlussarbeit als „nicht bestanden" bewertet wird.
+
+Hamburg, `r format(Sys.time(), '%A %d %B, %Y')`
+
+![](images/Signature%20Digital.png){width="211"}
+
+\pagebreak
+
+# Einleitung
+
+Die Flüchtlingskrise von 2015/2016 stellte Deutschland vor eine der größten gesellschaftlichen Herausforderungen der jüngeren Geschichte. In dieser Zeit wurden zwei besonders bedeutende Ereignisse medial intensiv diskutiert: Angela Merkels wegweisende „Wir schaffen das\"-Rede am 31. August 2015 und die Vorfälle in der Silvesternacht 2015/2016. Die Berichterstattung über diese Ereignisse in den Medien hatte einen erheblichen Einfluss auf die öffentliche Meinung und die Wahrnehmung von Flüchtlingen in Deutschland.
+
+Diese Hausarbeit widmet sich der Analyse der Entwicklung des Sentiments in der Berichterstattung über Flüchtlinge in Deutschland im Kontext der oben genannten Ereignisse. Dabei liegt der Fokus auf einem Vergleich der Artikelarchive zweier prominenter Online-Zeitungen: Bild Online und Spiegel Online (SPON). Die Forschungsfrage dieser Hausarbeit lautet: „*Wie hat sich das Sentiment der untersuchten Veröffentlichungen im untersuchten Zeitraum verändert?\"* Ich stelle hier zu die Hypothese auf, dass ein Abfall der Stimmung der Artikel von Sommer 2015 bis Frühjahr 2016 beobachtet werden kann. Dies würde das von @haller2017fluchtlingskrise beschriebene Phänomen bestätigen.
+
+@haller2017fluchtlingskrise analysierten bereits Ton und Inhalt des gleichen Zeitraums und kamen zu dem Schluss, dass Leitmedien vor allem Aussagen staatlicher und politischer Akteure als Quelle nahmen. Ihre Studie „ergab, dass in der Kategorie der relevanten Akteure und Sprecher zwei von drei Nennungen zur institutionellen Politik zählen" (Ebd. S. 133). Diese Leitmedien werden dabei unter dem Theorem der Agenda Setting betrachtet. Da diese Hausarbeit ein ähnliches Ziel verfolgt wie @haller2017fluchtlingskrise, werde ich mich ebenfalls auf dieses Theorem beziehen. Diese Arbeit versteht Leitmedien dabei als Meinungsmacher und betrachtet den Verlauf des Sentiments der Berichterstattung als relevanter Einfluss auf den öffentlichen Diskurs.
+
+Um das Sentiment in den Artikeln zu berechnen, wird ein Natural Language AI Model eingesetzt. Dieses moderne Analysewerkzeug ermöglicht eine schnelle, automatisierte Sentimentanalyse großer Textmengen. Es kann die positiven, neutralen und negativen Tendenzen in den Texten erkennen und somit eine quantitative Basis für die Untersuchung des Sentiments liefern. Da sich die Flüchtlingskrise 2015 facettenreich ausdrückt, wird zur Differenzierung der Ergebnisse eine Clusterung der Texte vorgenommen, wodurch diese in wenige verschiedene Themen eingeteilt werden sollen. Dadurch lassen sich Veränderungen in bestimmten Bereichen der Berichterstattung leichter aufzeigen.
+
+Die Verwendung dieses AI-Modells bietet mehrere Vorteile. 1) ermöglicht es eine effiziente und schnelle Analyse einer großen Anzahl von Artikeln, was bei manueller Analyse zeitaufwändig und unpraktisch wäre. 2) wird durch die maschinelle Verarbeitung ein reproduzierbarer Ansatz gewährleistet, da der Einfluss menschlicher Vorurteile und Sozialisierung minimiert werden. 3) können durch die computergestützte Analyse auch subtile Unterschiede im Sentiment erfasst werden, die für das Gesamtbild der medialen Berichterstattung relevant sein können.
+
+Im weiteren Verlauf dieser Hausarbeit werden die Ergebnisse der Sentimentanalyse diskutiert, um Einblicke in die mediale Reflexion der Flüchtlingskrise und die Rolle der Medien bei der Gestaltung der öffentlichen Meinung zu gewinnen. Darüber hinaus werden mögliche Einflussfaktoren auf das Sentiment und Unterschiede in der Berichterstattung zwischen den beiden Zeitungen beleuchtet. Ziel ist es, ein umfassendes Bild der Sentimententwicklung in der Berichterstattung über Flüchtlinge in Deutschland zu zeichnen und deren Bedeutung für die Gesellschaft zu reflektieren.
+
+# Theorie
+
+## Leitmedien
+
+Es bietet sich an, mit einer Definition für diesen, so viel sei verraten, noch häufig zu nennenden Begriff anzufangen. Häufig benutzt, und doch selten präzise definiert. @haller2017fluchtlingskrise scheinen den Begriff vor allem Synonym für Zeitung mit großer Auflage und überregionalem Fokus wie Süddeutsche Zeitung, Frankfurter Allgemeine Zeitung und Die Welt (vgl. Ebd. S. 10) zu benutzen, jedoch bleiben sie eine genaue Definition schuldig.
+
+@jarren2011 hingegen stellen uns eine Definition zur Verfügung, die auch mit dem Verständnis anderer Beiträge wie @haller2017fluchtlingskrise oder @entman2003 vereinbar ist.
+
+> *"Leitmedien besitzen also vor allem dann ein grosses Wirkungspotenzial, weil und wenn sie die Eliten in Politik, Wirtschaft und Kultur erreichen und dadurch Entscheidungen mit weit reichenden Konsequenzen beeinflussen können oder könnten: Was die führenden Medien aufgreifen, wird auch zum Thema der zuständigen Eliten. Leitmedien sind hier als Meinungsführermedien anzusehen"*
+>
+> @jarren2011
+
+## Die Medien und die Flüchtlingskrise
+
+@Birkner2020Der beschreiben zu Beginn der Flüchtlingskrise 2015 ein eher harmonisches Bild der deutschen Gesellschaft. Die Medien hätten zu Beginn vor allem positiv über das Thema berichtet. Gleichermaßen sei auch die generelle gesellschaftliche Stimmung positiv gewesen (Ebd. S. 52). Die BILD habe z. B. mit ihrer Aktion 'Wir Helfen\' geworben und alles in allem sei der Begriff 'Willkommenskultur' viel beworben [@haller2017fluchtlingskrise zitiert in @Birkner2020Der S. 53].
+
+@haller2017fluchtlingskrise kommt zu dem Schluss, dass in Leitmedien häufig ausschließlich positiv berichtet wurde und Positionen der politischen Eliten direkt oftmals unkritisch übernommen worden seien. Zwar sei die Stimmung generell postiv gewesen (vgl. @Birkner2020Der S.52) allerdings habe diese unkritische Berichterstattung auch in einigen Teilen der Öffentlichkeit zur Anschauung, „der deutsche Journalismus sei auf Regierungslinie\" (S. 53). Dieser positive Trend habe bis zum Ende des Sommers 2015 angehalten [vgl. @haller2017fluchtlingskrise S.93].
+
+> *"Im Laufe des 4. Quartals kommt nun aber auch eine völlig andere Tonlage, Stoßrichtung und Stimme im Parteienkonzert zu Gehör: Die Akteure der „Alternative für Deutschland" greifen das Narrativ Willkommenskultur auf und wenden es gegen seine Promotoren. Nachdem sie bis zum Sommer 2015 von der Presse im Kontext der Willkommenskultur kaum beachtet worden war, wird die AfD nun als Wortführer der Willkommenskultur-Kritiker quasi entdeckt und -- vor allem im Anschluss an die Silvesternacht 2015/16 -- in der Presse häufiger genannt als jede der Regierungsparteien"*
+>
+> @haller2017fluchtlingskrise S.93
+
+Die Stimmung kippte also spätestens nach der Silvesternacht von Köln, jedoch zeigt @haller2017fluchtlingskrise auch, dass die Grundlage für eine negativere Berichterstattung bereits vorher gelegt wurde. Die Silvesternacht von Köln bezeichnet ein Ereignis, bei dem „es in der Kölner Innenstadt zu Ausschreitungen [kam], bei denen Asylbewerber Frauen sexuell bedrängten\" [@Birkner2020Der] S. 53]. Spätestens danach kam es zu einem Bruch der durchweg positiven Berichterstattung. Die Springer Presse mit BILD und WELT seien danach einen deutlich kritischeren Kurs gefahren. Der Großteil der Medien habe sich allerdings hinter die Flüchtlinge gestellt und Angela Merkels Linie; zusammengefasst mit ihrem viel zitierten Ausspruch „Wir schaffen das!\" [vgl. Ebd. S.54].
+
+## Agenda Setting
+
+Die Agenda Setting Theorie, eingeführt von @mccombs1972agenda ist Theorie aus dem Bereich der Medienwissenschaften. Sie versteht Massenmedien als die Organe, die entscheiden, welche Themen Teil des öffentlichen Diskurses werden.
+
+> *"While the mass media may have little influence on the direction or intensity of attitudes, it is hypothesized that the mass media set the agenda for each political campaign, influencing the salience of attitudes toward the political issues."*
+>
+> ------------------------------------------------------------------------
+>
+> *"Während die Massenmedien nur einen geringen Einfluss auf die Richtung oder Intensität der Einstellungen haben, wird angenommen, dass die Massenmedien die Agenda für jede politische Kampagne festlegen und damit die Bedeutung der Einstellungen zu politischen Themen beeinflussen."*
+>
+> @mccombs1972agenda
+
+Politik und Medien werden hier in Wechselwirkung zueinander verstanden. Poltiker:innen wählen ihre Platform für die nächste Zeit und stellen diese vor. Der redaktionelle Teil der Massenmedien greift diese Platform auf, aber entscheidet am Ende selbst, welchen Inhalten man mehr Platz einräumen möchte.
+
+Den Massenmedien kommt damit eine wichtige Rolle des öffentlichen Lebens zu. Nicht nur entwickelt sich der öffentliche Diskurs entlang der gesetzten Agenda, ebenfalls wird dieser Diskurs auch die politische Arena berühren und sie in ihrer zukünftigen Ausrichtung verändern. Einen besonderen Fall dieses Austausches beschreibt @entman2003 mit dem Kaskadeneffekt. Es ist ein Fall, der beschreibt, wenn Medien für bestimmte Agendapunkte das Framing aus homogenen Quellen direkt übernehmen. @entman2003 beschreibt dies im Zusammenhang des Irakkriegs, als Massenmedien meist unkritisch das Framing der Bush-Administration übernahmen und damit einen Krieg gegen den Irak zu einem großen Thema innerhalb des öffentlichen Diskurses machten.
+
+# Methode
+
+## Sentiment Analyse
+
+Die Sentimentanalyse ist eine Methode der Textanalyse, die darauf abzielt, das Sentiment oder die Stimmung in einem Text zu erkennen und zu bewerten. Mithilfe eines Natural Language AI-Modells von @sentiment.ai wird jedem Artikel ein Sentiment Score zwischen -1 (sehr negativ) und 1 (sehr positiv) zugeordnet. Das AI-Modell analysiert dabei den Kontext, die verwendeten Wörter und die Satzstruktur, um das Sentiment des Textes zu ermitteln. Ein großer Vorteil der Sentimentanalyse mittels AI-Modells besteht in ihrer Effizienz und Skalierbarkeit. Im Vergleich zu manuellen Methoden ermöglicht sie die schnelle und automatisierte Analyse einer großen Anzahl von Artikeln, wodurch umfassendere Erkenntnisse über die mediale Wahrnehmung der Flüchtlingskrise gewonnen werden können. Zudem reduziert die Verwendung eines AI-Modells die Anfälligkeit für menschliche Vorurteile, da die Analyse objektiver und konsistenter erfolgt.
+
+## LDA
+
+Die Methode des Themenclustering mit Latent Dirichlet Allocation (LDA) ist ein unüberwachtes Lernverfahren zur Themenmodellierung von Textdaten. Dabei werden ähnliche Artikel aufgrund ihrer thematischen Übereinstimmungen in Clustern zusammengefasst. LDA identifiziert latente Themen, die in den Artikeln verborgen sind, und ordnet jeden Artikel den entsprechenden Clustern zu. Die Methode basiert auf einer Wahrscheinlichkeitsverteilung, die es erlaubt, die thematischen Beziehungen in den Artikeln zu entdecken. Ein wesentlicher Vorteil von LDA besteht in seiner Flexibilität und Fähigkeit, neue und unerwartete Themen zu entdecken, ohne vorher definierte Kategorien zu benötigen. Dadurch kann LDA einen tieferen Einblick in die in den Artikeln behandelten Themen geben, die möglicherweise bei vorherigen manuellen Kategorisierungsansätzen unentdeckt geblieben wären. Zudem ermöglicht die Themenclustering-Analyse eine umfassendere und differenziertere Analyse der Berichterstattung über die Flüchtlingskrise, indem sie Artikel mit ähnlichen Schwerpunkten und Inhalten in thematischen Clustern zusammenfasst.
+
+### **Webscraping**
+
+Die Datenerhebung für diese Hausarbeit erfolgte mittels Webscraping, einer automatisierten Technik zur Extraktion von Daten von Websites. Ziel war es, Artikel aus den Archiven zweier Online-Zeitungen, nämlich Bild Online und SPON, zu sammeln, um eine umfangreiche Datengrundlage für die Analyse der Entwicklung des Sentiments in der Berichterstattung über Flüchtlinge in Deutschland 2015/2016 zu schaffen.
+
+Das Webscraping bietet den Vorteil, eine große Menge an relevanten Artikeln aus den Archiven der Online-Zeitungen zu extrahieren, ohne dass dies manuell erfolgen muss. Es ermöglichte eine automatisierte Datenerhebung, wodurch Zeit und Aufwand eingespart werden können. Die gesammelten Artikel bilden eine unrepräsentative Stichprobe der medialen Berichterstattung über Flüchtlinge während der untersuchten Zeiträume, die als Basis für die weitere Analyse mittels Sentimentanalyse und Themenclustering dienten.
+
+## Auswahl der Zeitungen
+
+Diese Arbeit versucht, einen Vergleich anzubieten. Da ich vor allem an sichtbarer Veränderung interessiert bin, ergibt es Sinn, mindestens eine Zetung in das Datenset mit aufzunehmen, die einen besonders starken Rechtsruck anzeigen würde. Da es häufig schwierig sein kann, die tatsächliche editoriale Linie einer Zeitschrift zu definieren, beziehe ich mich bei dieser Einordnung auf die angenommene politische Ausrichtung der Leserschaft in Person der deutschen Bundestagsabgeordneten. @Barthels2021Die zeigt, dass Bild.de vor allem von rechtsgerichteten Parteien wie der AFD, CDU und FDP aufgerufen werde. SPON hingegen vor allem von Abgeordneten der Grünen, SPD und Linken. Allerdings werde der SPON auch von allen Parteien auf einem relativ hohen Niveau genutzt.
+
+Aus den Nutzungsstatistiken leite ich ab, dass der SPON als Nachrichtenorgan vor allem neutral angesehen wird und daher eine gute Basislinie für einen Vergleich zur eher rechtpopulistischen Linie der Bild darstellen soll.
+
+# Ergebnisse
+
+Die meisten Beobachtungen stammen aus den Feldern Politik/Ausland sowie Panorama. Durchschnittlich gibt es 3,5 Beobachtungen pro Tag mit einer Spannweite von 19, wobei der maximale Wert 19 Beobachtungen pro Tag beträgt.
+
+Mit Anfang des Septembers 2015 lässt sich ein erhöhtes Aufkommen an Artikeln erkennen, welches seinen Hochpunkt zwischen November und Dezember 2015 erreicht. Ursprünglich wurden alle Artikel, die verfügbar waren und aus Text bestanden (Bildstrecken oder Videos wurden nicht gescraped) gesammelt. Dieses Datenset wurde dann mit einem Stichwortfilter eingegrenzt. Nach diesen Stichwörtern wurde im Titel oder Text gesucht.
+
+```{r Schlagwörter, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+library(knitr)
+readRDS("data/data_full.rds")%>%
+  select(content, title)%>%
+  mutate (flüchtling = ifelse(grepl("flüchtling", tolower(content)) == T,1,0)
+  , flüchtling = ifelse(grepl("flüchtling", tolower(title)) == T,1,flüchtling)
+  , migranten = ifelse(grepl("migranten", tolower(content)) == T,1,0)
+  , migranten = ifelse(grepl("migranten", tolower(title)) == T,1,migranten)
+  , migration = ifelse(grepl("migration", tolower(content)) == T,1,0)
+  , migration = ifelse(grepl("migration", tolower(title)) == T,1,migration)
+  , ausland = ifelse(grepl("ausland", tolower(content)) == T,1,0)
+  , ausland = ifelse(grepl("ausland", tolower(title)) == T,1,ausland)
+, ausländer = ifelse(grepl("ausländer", tolower(content)) == T,1,0)
+, ausländer = ifelse(grepl("ausländer", tolower(title)) == T,1,ausländer)
+, terror = ifelse(grepl("terror", tolower(content)) == T,1,0)
+, terror = ifelse(grepl("terror", tolower(title)) == T,1,terror)
+, schleuser = ifelse(grepl("schleuser", tolower(content)) == T,1,0)
+, schleuser = ifelse(grepl("schleuser", tolower(title)) == T,1,schleuser)
+, asyl = ifelse(grepl("asyl", tolower(content)) == T,1,0)
+, asyl = ifelse(grepl("asyl", tolower(title)) == T,1,asyl)
+, integration = ifelse(grepl("integration", tolower(content)) == T,1,0)
+, integration = ifelse(grepl("integration", tolower(title)) == T,1,integration)
+, abschiebung = ifelse(grepl("abschiebung", tolower(content)) == T,1,0)
+, abschiebung = ifelse(grepl("abschiebung", tolower(title)) == T,1,abschiebung)
+, nordafrika = ifelse(grepl("nordafrika", tolower(content)) == T,1,0)
+, nordafrika = ifelse(grepl("nordafrika", tolower(title)) == T,1,nordafrika)
+)%>%
+  select(-title, -content)%>%
+  gather(key = "Schlagwort", value = "Vorkommen")%>%
+  mutate(Schlagwort = str_to_title(Schlagwort))%>%
+  group_by(Schlagwort)%>%
+  summarise(Vorkommen = sum(Vorkommen))%>%
+  kable(caption = "Schlagwörter zur Suche nach relevanten Artikeln")
+```
+
+Diese Liste ist ohne Zweifel nicht vollständig, jedoch geht eine genauere Methodik über den Rahmen dieser Arbeit hinaus, wäre aber für zukünftige Arbeiten denkbar.
+
+## Sentiment Analyse
+
+Ausgehend von der @Birkner2020Der ausgeführten Zeitreihe definiere ich meinen Untersuchungszeitraum um diese zwei Events herum. Er beginnt Juli 2015 und endet im März 2016. Es umfasst damit die beiden relevanten Ereignisse, den 'Wir schaffen das!'-Auspruch von Angela Merkel Ende August 2015 und die Sylvesternacht in Köln mit genug Nachlauf, um Trendveränderungen erkennen zu können.
+
+Eine einfache Zeitreihe lässt einen negativen Trend erkennen. Der Sommer 2015 beginnt relativ positiv. Diese Einstellung nimmt jedoch bis April 2016 ab. Die Bildzeitung macht dabei einen deutlich stärkeren Wandel durch. SPON, wenn auch mit einem leicht negativen Trend verändert sich in Sentiment kaum. Teilweise wird hier @haller2017fluchtlingskrise bestätigt. Beide Zeitungen erleben eine wahrnehmbare negative Veränderung. Begann der Trend für die Bildzeitung im beobachteten Zeitraum bei etwas über 0,15, findet er sich am Ende bei etwas unter 0,1. Über alle Themen hinweg hat das durchschnittliche Sentiment damit um über 5% abgenommen.
+
+```{r sentiment_timeseries, echo=FALSE, message=FALSE, warning=FALSE, fig.cap = "Zeitreihe Durchschnittliches Sentiment Pro Tag", out.width="70%"}
+data_sentiment_topics <- readRDS("data/data_full.rds")
+
+data_sentiment_topics %>%
+  mutate(upload_date = round_date(upload_date, unit = "weeks"))%>%
+  select(sentiment_ai, upload_date, outlet)%>%
+  group_by(upload_date, outlet)%>%
+  summarise(sentiment_ai = median(sentiment_ai))%>%
+  unique() %>%
+  filter(upload_date >= "2015-06-27 22:00:00" & upload_date <= "2017-07-28 04:58:03" & 
+           !is.na(upload_date)) %>%
+  ggplot() +
+  aes(x = upload_date, y = sentiment_ai, colour = outlet, linetype = outlet) +
+  geom_line() +
+  geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+  scale_color_manual(values = c(BILD = "#db006e", SPON = "#3a3da8")) +
+  labs(x = ""
+       , y = "Sentiment"
+       , title = "Sentiment Zeitreihe"
+       , subtitle = "Durchschnittles Sentiment pro Woche nach Medium"
+       , caption = "Daten stammen aus den Archiven von Spiegel und Bild Online
+Zeitraum Juli 2015 bis April 2016"
+       , color = "Zeitung"
+       , linetype = "Zeitung") +
+  owidR::theme_owid()
+```
+
+In dieser Zeitreihe finden sich allerdings viele Texte, die in irgendeiner Form Flüchtlinge erwähnen, wieder. Wie oben erwähnt wurden nur Schlagwortsuchen benutzt, um die Artikelmenge einzugrenzen. Tatsächlich ist allerdings anzunehmen, dass das zu beobachtende Phänomen sich in vielen Facetten und Themen widerspiegeln wird. In dem vorhandenen Datenset und der oben abgebildeten Zeitreihe finden sich all diese Themen unberücksichtigt wieder. Diese könnten das durchschnittlich gemessene Sentiment durchaus beeinflussen. Im nächsten Abschnitt soll sich daher mit dieser Problematik befasst werden.
+
+## Topic Modelling (LDA)
+
+Zur tieferen Betrachtung der Sentimentanalyse werden die Texte mittels LDA-Modelling in Themen eingeteilt. Dies geschieht mittels einer unbeaufsichtigten Lernmethode. Zur Auswahl der Menge an Clustern wurden und Koherenz als entscheidende Faktoren für Interpretierbarkeit herangezogen. Ich habe mich am Ende für 4 Cluster entschieden.
+
+```{r topic_model_k_selection, figures-side, fig.show="hold", out.width="50%", echo=FALSE, message=FALSE, warning=FALSE, fig.cap = "K Means Cluster Optimum", fig.height= 6, fig.width= 9}
+data_flucht_sent <- readRDS("data/table_data_flucht_sent_sentiments_raw.rds")
+
+#K Plot result
+plot <- readRDS("data/topics_plot.rds")
+ggplot(plot, aes(K, value, color = variable)) +
+  geom_line(size = 1.5, show.legend = FALSE) +
+  facet_wrap(~variable,scales = "free_y") +
+  scale_color_manual(values = c(Coherence = "#db006e", Exclusivity = "#3a3da8")) +
+  labs(x = "Menge an Topics K",
+       title = "Statistischer Fit Modelle mit verschiedenen K"
+       , subtitle = "Plot zur Wahl der optimalen menge an Cluster Zentren")+
+  owidR::theme_owid()
+
+# decide on the number of topics K ----
+## Interpretability and relevance of topics ----
+# Model Topics Words
+library(topicmodels)
+library(tidyverse)
+library(reshape2)
+library(stm) 
+
+model <- readRDS("data/topics_model.rds")
+plot(model,type="labels"
+     , main = "Cluster Wort Assoziationen")
+```
+
+Von den 4 Clustern sind zumindest 3 gut interpretierbar. Auf Grundlage der genannten hoch korrelierten Wörter habe ich die 4 Themen 'Rechtsextremismus', 'Islamischer Terrorismus', 'Europäische Flüchtlingskrise' und 'US-Wahl' benannt.
+
+## Sentimentanalyse mit Topic Modelling (LDA)
+
+Mittels der Clusterergebnisse lassen sich nun die Sentimente aufgeteilt nach Thema ploten und ihre individuelle Entwicklung beobachten. Tatsächlich lässt sich erkennen, dass vor allem im Thema 'Europäische Flüchtlingskrise' das Sentiment im beobachteten Zeitraum extrem gesunken ist. Diese Beobachtung gilt für beide beobachteten Medien. Die anderen Themen sind von dieser Entwicklung weitestgehend unbetroffen. Zwar gibt es auch im Bereich des islamistischen Terrors eine negative Entwicklung, jedoch nur auf Seiten der Bildzeitung[^1].
+
+[^1]: Der Spike am Ende des Jahres in Abbildung 3 kommt bei der Bildzeitung dadurch zu Stande, dass es nur einen Artikel mit einem Sentiment von 0,441 gibt; Ein Interview mit Entwicklungsminister Müller. Spiegel Online veröffentlicht in der gleichen Woche einen Artikel namens „Flüchtlinge: Küstenwache rettet zu Weihnachten Tausende im Mittelmeer" (Score 0,486), „Silvester: An Flüchtlingsheimen in NRW herrscht Böller-Verbot" (0.288), sowie „Zuwanderung: Flüchtlinge können für Wirtschaftswunder sorgen" (0,155), die zu diesem Peak führen. Es gab nur einen Artikel, der leicht negativ war (-0,145). Es scheint zwischen diesen Peaks jedoch keinen Zusammenhang zu geben.
+
+```{r sentiments_topics, echo=FALSE, message=FALSE, warning=FALSE, fig.cap = "Zeitreihe Sentiment nach Themen", out.width="100%"}
+data_sentiment_topics %>%
+ mutate(upload_date = round_date(upload_date, unit = "weeks"))%>%
+ select(sentiment_ai, upload_date, outlet, Topic)%>%
+ group_by(upload_date, outlet, Topic)%>%
+ summarise(sentiment_ai = median(sentiment_ai))%>%
+ unique() %>%
+ filter(upload_date >= "2015-06-27 22:00:00" & upload_date <= "2017-07-28 04:58:03" & 
+ !is.na(upload_date)) %>%
+ ggplot() +
+ aes(x = upload_date, y = sentiment_ai, colour = outlet, linetype = outlet) +
+ geom_line() +
+ geom_smooth(formula = y ~ x, method = "lm", se = FALSE) +
+  scale_color_manual(values = c(BILD = "#db006e", SPON = "#3a3da8")) +
+ labs(x = ""
+      , y = "Sentiment"
+      , title = "Sentiment Zeitreihe"
+      , subtitle = "Durchschnittles Sentiment pro Woche nach Topic und Medium"
+      , caption = "Daten stammen aus den Archiven von SPON und Bild Online
+Zeitraum Juli 2015 bis April 2016"
+      , color = "Medium"
+      , linetype = "Medium") +
+ owidR::theme_owid() +
+ facet_wrap(vars(Topic))
+```
+
+# Fazit
+
+Diese Hausarbeit hat es sich zum Ziel gemacht, vor dem Hintergrund der Flüchtlingskrise von 2015 bis 2016 mittels eines Natural Language Models die Sentimententwicklung von Artikeln der beiden Onlineausgaben der Leitmedien SPON und Bild zu untersuchen. Dies sollte dem Zweck dienen, Erkenntnisse von z.B. @haller2017fluchtlingskrise mit anderen Methoden zu überprüfen. Mittels Topic Modelling wurden die Texte in die 4 überordnenden Themen 'Rechtsextremismus', 'Islamischer Terrorismus', 'Europäische Flüchtlingskrise' und 'US-Wahl' eingeteilt. Dabei lässt sich erkennen, dass der generelle Trend vom Sommer 2015 bis Frühjahr 2016 merklich gesunken ist. Der Beobachtungszeitraum beginnt im Sommer 2015 mit einer leicht positiven Tendenz, nimmt im Verlauf des Jahres aber weiterhin ab und ist am Ende des Zeitraums in das leicht negative gekippt. Überraschend ist, dass sich dieser Trend in beiden Publikationen nahezu identisch wiederfindet.
+
+Diese Ergebnisse sind stimmig mit anderer Forschung wie etwa @haller2017fluchtlingskrise. Diese fanden ebenfalls für den Anfangszeitraum eine vor allem positive Stimmung vor und heben dabei besonders das Narrativ der 'Willkommens Kultur' hervor (Ebd. S. 99). Ebenso beschreiben sie, dass während der Berichterstattung häufig die Positionen der politischen Eliten wiedergegeben wurden und diese dadurch dem Theorem der Agenda Setting folgend besonders viel Platz im öffentlichen Diskurs eingeräumt bekamen (Ebd. S. 134). Nachdem wir gezeigt haben, dass das sich wandelnde Sentiment tatsächlich reproduzierbar zu zeigen ist, könnte dies ein erster Schritt sein, eine Beobachtung wie der von @entman2003 beschriebene Kaskadeneffekt nachzuweisen. @haller2017fluchtlingskrise beobachtungen bezüglich der bezogenen Quellen der Leitmedien geben ebenfalls bereits starke Hinweise auf diese Vermutung.
+
+Daraus lässt sich eine interessante These ableiten, die es in den folgenden Studien zu überprüfen gilt. Wie @haller2017fluchtlingskrise beschreibt, waren die von @entman2003 beschriebenen Kaskadeneffekte über den gesamten Zeitraum zu beobachten. Allerdings haben sich die politischen Orientierungen der befragten politischen Eliten von den Regierungsparteien überproportional zur AfD verändert. In diesem Zusammenhang muss die Frage erlaubt sein, ob der Stimmungsumschwung gegenüber den nach Deutschland kommenden Flüchtlingen nicht vor allem durch die Medien beeinflusst wurde und damit das Erstarken rechter Parteien in Deutschland.
+
+Weiterhin zeigt diese Arbeit, dass automatisierte Textverarbeitung schnelle und effiziente Studien mit tausenden Textdokumenten als Datengrundlage deutlich vereinfacht. Gerade unter dem Thema Open Data kann dies ein entscheidender Fortschritt in der Sozial- und Medienwissenschaftlichen Forschung sein. Mit Blick auf die Zukunft wäre es allerdings wünschenswert, spezifischere Modelle zur Verfügung zu haben, deren Trainingssets öffentlich einsehbar sind. Denn obwohl die Berechnungen des AI-Modells durchaus schlüssig sind, ist es am Ende unmöglich zu interpretieren, warum das Model zu dem Schluss kam, zu dem es gegkommen ist. Zudem sollten generelle Standards im Umgang mit schwer interpretierbaren Machine-Learning Modellen gefördert und genauso gelehrt werden. An dieser Stelle muss von Forschungsseite dringend nachgebessert werden.
+
+Weiterführende Arbeiten könnten sich mit der Analyse der Akteure innerhalb der Artikel, die in diesem Datenset gesammelt wurden, beschäftigen, um die Erkenntnisse von @haller2017fluchtlingskrise, dass die meisten Quellen oftmals aus politischen Eliten stammen, zu überprüfen. Auch dies sollte mit Machine-Learning-Modellen effizient zu gestalten sein.
+
+# Packagenutzung {.unlisted .unnumbered}
+
+Für Datentransformation und das Erstellen von Plots wurde das Tidyverse-Package [@tidyverse] )benutzt. Webscraping wurde mit hilfe des Rvest Packages durchgeführt [@rvest]. Sentimentanalysen wurden mit Sentiment.ai [@sentiment.ai] durchgeführt. Topic Modelling wurde mit den Libraries von @quanteda, @stm und @topicmodels erstellt. Tabellen wurden mit @vtable erstellt. Da das Scrapen und Auswerten mittels AI Model sehr lange dauert, möchte ich auch besonders @progress erwähnen, welche mir das Leben stark durch einen einfachen Progress Bar sehr vereinfacht haben.
+
+## Anmerkung {.unlisted .unnumbered}
+
+Code und Datensets finden sich unter <https://github.com/lrodeck/Hausarbeit-MedSoz-Stru-Pol-Kon-Zus>
+
+
+# Literatur- und Packageverzeichnis {.unlisted .unnumbered}
