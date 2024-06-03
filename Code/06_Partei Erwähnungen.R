@@ -52,14 +52,14 @@ data_parties_gold_ts %>%
  filter(upload_date >= "2015-06-27 22:00:00" & upload_date <= "2016-06-12 02:38:42" | 
  is.na(upload_date), Topic == "Europäische Flüchtlingskrise") %>%
  ggplot() +
- aes(x = upload_date, y = Erwähnungen, colour = Partei) +
- geom_line() +
- scale_color_manual(values = c(AfD = "#0489DB", CDU = "#000000", FDP = "#FFEF00", Grüne = "#1AA037", 
+ aes(x = upload_date, y = Erwähnungen, fill = Partei) +
+ geom_col() +
+ scale_fill_manual(values = c(AfD = "#0489DB", CDU = "#000000", FDP = "#FFEF00", Grüne = "#1AA037", 
  Linke = "#A6006B", SPD = "#E3000F")) +
  labs(x = "Woche", y = "Erwähungen", title = "Partei Erwähnungen in Thema Europäische Flüchtlingskrise", 
  subtitle = "Summe der Erwähnungen von Parteien nach Schlagwortsuche", caption = "Daten von SPON & BILD zusammen", 
  color = "Partei") +
- theme_light() +
+ ggthemes::theme_fivethirtyeight() +
  facet_wrap(vars(Partei))
 
 
@@ -108,11 +108,13 @@ library(fastDummies)
 library(jtools)
 library(huxtable)
 library(zoo)
+library(readxl)
+
 # load and transoform polit bar data -----------------------------------------------------
 
 
-polit_bar_prob <- read_excel("data/Polit Barometer Daten 1.xlsx", 
-                             skip = 5)
+polit_bar_prob <- read_excel("Data/Polit Barometer Daten 1.xlsx"
+                   , skip = 5)
 polit_bar_prob <- polit_bar_prob%>%
   filter(date >= '2015-06-01' & date < '2016-04-01')
 
@@ -159,27 +161,27 @@ data_parties_regression <- fastDummies::dummy_cols(data_parties_gold_wahlen
 
 library(correlation)
 correlation(data_parties_regression%>%dplyr::select(migration, social_down_mobility))
-reg_model_union <- lm(data = data_parties_regression%>%filter(Partei_Union == 1)%>%rename(sentiment_bild = Union.x, sentiment_spon = Union.y), 
+reg_model_union <- glm(data = data_parties_regression%>%filter(Partei_Union == 1)%>%rename(sentiment_bild = Union.x, sentiment_spon = Union.y), 
                     Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                     + week_since_start + Wert_Lag + migration + social_down_mobility 
                     + sentiment_bild + sentiment_spon)
-reg_model_SPD <- lm(data = data_parties_regression%>%filter(Partei_SPD == 1)%>%rename(sentiment_bild = SPD.x, sentiment_spon = SPD.y), 
+reg_model_SPD <- glm(data = data_parties_regression%>%filter(Partei_SPD == 1)%>%rename(sentiment_bild = SPD.x, sentiment_spon = SPD.y), 
                       Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                     + week_since_start + Wert_Lag + migration + social_down_mobility 
                     + sentiment_bild + sentiment_spon)
-reg_model_fdp <- lm(data = data_parties_regression%>%filter(Partei_FDP == 1)%>%rename(sentiment_bild = FDP.x, sentiment_spon = FDP.y), 
+reg_model_fdp <- glm(data = data_parties_regression%>%filter(Partei_FDP == 1)%>%rename(sentiment_bild = FDP.x, sentiment_spon = FDP.y), 
                     Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                     + week_since_start + Wert_Lag + migration + social_down_mobility 
                     + sentiment_bild + sentiment_spon)
-reg_model_grn <- lm(data = data_parties_regression%>%filter(Partei_Grüne == 1)%>%rename(sentiment_bild = Grüne.x, sentiment_spon = Grüne.y), 
+reg_model_grn <- glm(data = data_parties_regression%>%filter(Partei_Grüne == 1)%>%rename(sentiment_bild = Grüne.x, sentiment_spon = Grüne.y), 
                     Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                     + week_since_start + Wert_Lag + migration +social_down_mobility  
                     + sentiment_bild + sentiment_spon)
-reg_model_linke <- lm(data = data_parties_regression%>%filter(Partei_Linke == 1)%>%rename(sentiment_bild = Linke.x, sentiment_spon = Linke.y), 
+reg_model_linke <- glm(data = data_parties_regression%>%filter(Partei_Linke == 1)%>%rename(sentiment_bild = Linke.x, sentiment_spon = Linke.y), 
                     Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                     + week_since_start + Wert_Lag + migration + social_down_mobility 
                     + sentiment_bild + sentiment_spon)
-reg_model_afd <- lm(data = data_parties_regression%>%filter(Partei_AfD == 1)%>%rename(sentiment_bild = AfD.x, sentiment_spon = AfD.y), 
+reg_model_afd <- glm(data = data_parties_regression%>%filter(Partei_AfD == 1)%>%rename(sentiment_bild = AfD.x, sentiment_spon = AfD.y), 
                 Wert ~ Erwähnungen + pre_sylvester_2016 + pre_merkel_speech 
                 + week_since_start + Wert_Lag + migration + social_down_mobility 
                 + sentiment_bild + sentiment_spon)
@@ -208,4 +210,3 @@ jtools::export_summs(reg_model_union
                      , to.file = "latex"
                      , file.name = "Regression"
                      )
-

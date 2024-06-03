@@ -10,18 +10,17 @@ require(data.table)
 require(ds4psy)
 # Load data sets ----------------------------------------------------------
 
-data_fin <- readRDS("table_spiegel_data.rds")
-data_sent_raw <- readRDS("table_sentiments_raw.rds")
-data_flucht_sent <- readRDS("table_data_flucht_sent_sentiments_raw.rds")
-data_flucht <- readRDS("table_data_flucht_sentiments_raw.rds")
-data_fin_bild <- readRDS(file = "table_bild_data.rds")
+data_fin <- readRDS("Data/table_spiegel_data.rds")
+data_sent_raw <- readRDS("Data/table_sentiments_raw.rds")
+data_flucht_sent <- readRDS("Data/table_data_flucht_sent_sentiments_raw.rds")
+data_flucht <- readRDS("Data/table_data_flucht_sentiments_raw.rds")
+data_fin_bild <- readRDS(file = "Data/table_bild_data.rds")
 
 
 
 # Set Up Model ------------------------------------------------------------
 # if you don't want to install the model jump right to exploratory data analysis 
 # or timeseries & correlation
-
 # install_sentiment.ai(method = "conda") # uncomment for reinstallation
 # Initiate the model
 # This will create the sentiment.ai.embed model
@@ -117,14 +116,18 @@ data_bild_spon_flucht <- rbind(data_flucht_spon,data_flucht_bild)%>%
          )%>%
   filter(!grepl("International", resort))
 
+data_bild_spon_flucht%>%
+  filter(urls == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
 
 
+saveRDS(data_flucht_spon, file = "Data/table_data_flucht_SPON_sentiments_raw.rds")
+saveRDS(data_flucht_bild, file = "Data/table_data_flucht_BILD_sentiments_raw.rds")
+saveRDS(data_bild_spon_flucht, file = "Data/table_data_flucht_full_sentiments_raw.rds")
 
-saveRDS(data_flucht_spon, file = "table_data_flucht_SPON_sentiments_raw.rds")
-saveRDS(data_flucht_bild, file = "table_data_flucht_BILD_sentiments_raw.rds")
-saveRDS(data_bild_spon_flucht, file = "table_data_flucht_full_sentiments_raw.rds")
+data_bild_spon_flucht <- readRDS(file = "Data/table_data_flucht_full_sentiments_raw.rds")
 
-data_bild_spon_flucht <- readRDS(file = "table_data_flucht_full_sentiments_raw.rds")
+data_bild_spon_flucht%>%
+  filter(urls == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
 
 
 
@@ -197,7 +200,6 @@ for (i in data_bild_spon_flucht$urls) {
 # sentimentr.score <- sentiment_by(get_sentences(data_flucht_bild$content), 1:length(data_flucht_bild$content))$ave_sentiment
 
 data_flucht_sent <- data_bild_spon_flucht%>%
-  unique()%>%
   left_join(data_sentiment%>%unique(), join_by(urls == url))%>%
   rename(sentiment_ai = sentiment.ai.score)%>%
   mutate(pre_sylvester_2016 = case_when(ymd(upload_date) <= '2015-12-31' ~ "1"
@@ -208,8 +210,17 @@ data_flucht_sent <- data_bild_spon_flucht%>%
   unique()
 
 
-saveRDS(data_flucht_sent, file = "table_data_flucht_sent_sentiments_raw.rds")
+data_sentiment%>%
+  filter(url == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
+data_bild_spon_flucht%>%
+  filter(urls == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
 
+data_flucht_sent%>%
+  filter(urls == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
+
+saveRDS(data_flucht_sent, file = "Data/table_data_flucht_sent_sentiments_raw.rds")
+read_rds("Data/table_data_flucht_sent_sentiments_raw.rds")%>%
+  filter(urls == "https://www.spiegel.de/politik/deutschland/fluechtlinge-bundesregierung-beschliesst-neues-asylgesetz-a-1055193.html")
 
 # Timeseries & Correlations -----------------------------------------------
 

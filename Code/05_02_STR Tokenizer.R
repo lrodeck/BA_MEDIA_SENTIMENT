@@ -1,4 +1,4 @@
-data_full <- readRDS("data/data_full.rds")
+data_full <- readRDS("Data/data_full.rds")
 
 library(text)
 library(tidyverse)
@@ -75,13 +75,13 @@ saveRDS(data_actors%>%
          | entity == "B-LOC"
          | entity == "B-ORG"
          | entity == "B-MISC")
-, "data/data_tokens_nested.RDS")
+, "Data/data_tokens_nested.RDS")
 
 
 
 
 
-data_tokens_class_refined <- readRDS("data/data_tokens_nested.RDS")
+data_tokens_class_refined <- readRDS("Data/data_tokens_nested.RDS")
 
 
 
