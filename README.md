@@ -77,3 +77,10 @@ diesem Datenset gesammelt wurden, beschäftigen, um die Erkenntnisse von Haller 
 die meisten Quellen oftmals aus politischen Eliten stammen, zu überprüfen. Auch dies sollte mit
 Machine-Learning-Modellen effizient zu gestalten sein.
 
+
+# Update
+
+Dank der Verfügbarkeit von neueren Topic Classifiern wie BERTOPIC könnte eine tiefer gehende Analyse in Zukunft noch mals leichter werden. 
+Eine erste Analyse zeigt bereits deutlich mehr kleinere Topics innerhalb der Datenmenge. BERTOPIC kommt ebenfalls mit der Möglichkeit diese Topics 2 Dimensional zu mappen:
+
+![newplot (1)](https://github.com/user-attachments/assets/6d4d00e1-8d8f-4993-b88f-3ea974dc485f)
